@@ -13,35 +13,36 @@ from core.algorithm.algorithm_2_PGES import *
 def main():
     ss = SystemState()
 
-    for i in range(15):
+    for i in range(5):
         bs = BaseStation(id=i)
         rd_CR = random.randint(2500 * 4, 4000 * 16)
-        rd_M = random.randint(4 * 1024, 128 * 1024)
-        rd_bhBW = random.randint(20, 200)
+        rd_M = random.randint(2 * 1024, 4 * 1024)
+        rd_bhBW = random.randint(200, 300)
         sec = SECServer(id=i, comp_resource=rd_CR, memory=rd_M, backhaul_bw=rd_bhBW)
         ss.add_base_station(bs=bs, associated_sec_id=sec.id)
         ss.add_sec_server(sec=sec)
 
-    for i in range(150):
+    for i in range(15):
         rd_CR = random.randint(400, 800)
-        iot = IoTDevice(id=i, comp_resource=rd_CR, tx_power=0.1, bandwidth=10_000_000, channel_gain=1,
-                        noise_power=10e-5)
+        iot = IoTDevice(id=i, comp_resource=rd_CR, tx_power=0.1, bandwidth=10_000_000, channel_gain=1e-5,
+                        noise_power=4e-14)
         bs_id = random.randint(0, ss.get_base_station_count() - 1)  # 注意这里生成的随机数范围 a <= rd <= b
         ss.add_iot_device(iot=iot, associated_bs_id=bs_id)
 
-    for i in range(6):
+    for i in range(5):
         type_id = random.choice(string.ascii_uppercase[:10])
-        image_size = random.randint(100, 500)
+        image_size = random.randint(10, 50)
         func_type = FunctionType(id=type_id, image_size=image_size)
         ss.add_function_type(func_type=func_type)
 
-    for i in range(1500):
+    for i in range(75):
         # 关联到 FunctionType
         _rd_key = random.choice(list(ss.function_types.keys()))
+
         func_type: FunctionType = ss.function_types.get(_rd_key)['instance']
-        rd_d = random.uniform(0.1, 1.5)
-        rd_c = random.randint(5, 50)
-        rd_n = random.randint(2, 20)
+        rd_d = random.uniform(0.01, 0.5)
+        rd_c = random.randint(200, 800)
+        rd_n = random.randint(5, 15)
         func = FunctionTask(id=i, data_size=rd_d, workload=rd_c, invocations=rd_n, func_type=func_type)
 
         # 关联到 IoTDevice
@@ -73,7 +74,7 @@ def main():
     sp = StrategicProfile(system_state=ss)
 
     total_cost = sp.calc_total_cost()
-    print(total_cost)
+    print(f'优化前系统总成本：{total_cost}')
 
     # 算法1：LEAO
     alpha: Dict[str, int] = algorithm_1_LEAO(system_state=ss)
@@ -84,13 +85,19 @@ def main():
         sp.strategy[func_id]['scheduling'] = ss.f2s_mapping(func_id=func_id).id
 
     total_cost = sp.calc_total_cost()
-    print(total_cost)
+    print(f'算法1优化后系统总成本：{total_cost}')
+
+    offloading_count = 0
+    for func_id, _val in sp.strategy.items():
+        if _val['offloading'] == 1:
+            offloading_count += 1
+    print(f'卸载到SEC侧的百分比为：{offloading_count / len(sp.strategy.keys()) * 100}%，数量：{offloading_count}，总数：{len(sp.strategy.keys())}')
 
     # 算法2：PGES
     beta, mem_alloc, cr_alloc = algorithm_2_PGES(ss=ss, sp=sp, max_iter=10000, delta=10e-3)
 
     total_cost = sp.calc_total_cost()
-    print(total_cost)
+    print(f'算法2优化后系统总成本：{total_cost}')
 
 
 if __name__ == '__main__':

@@ -22,12 +22,17 @@ def algorithm_1_LEAO(system_state: SystemState) -> Dict[str, int]:
         sec: SECServer = system_state.f2s_mapping(func_id=func_id)
 
         # 计算策略1的cost
+        print(f'LEAO 策略1：')
         latency, energy = local_device_execution(func=func, iot=iot)
         cost_s1 = OMEGA * (latency / T_ref) + (1 - OMEGA) * (energy / E_ref)
+        print("------")
+
 
         # 计算策略2的cost
-        latency, energy = local_sec_execution(func=func, iot=iot, sec=sec, cr_ik=128 * RATIO)
+        print(f'LEAO 策略2：')
+        latency, energy = local_sec_execution(func=func, iot=iot, sec=sec, cr_ik=256 * RATIO)
         cost_s2 = OMEGA * (latency / T_ref) + (1 - OMEGA) * (energy / E_ref)
+        print("------")
 
         # 计算并记录 delta_cost
         _delta_cost[func_id] = cost_s1 - cost_s2
@@ -36,9 +41,9 @@ def algorithm_1_LEAO(system_state: SystemState) -> Dict[str, int]:
     for func_id, delta in sorted(_delta_cost.items(), key=lambda item: item[1], reverse=True):
 
         # 如果有正收益，则卸载到本地SEC，并扣减资源池资源
-        if delta > 0 and S_avail > 128:
+        if delta > 0 and S_avail > 256:
             alpha[func_id] = 1
-            S_avail -= 128
+            S_avail -= 256
         else:
             break
 

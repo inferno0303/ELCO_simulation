@@ -158,8 +158,8 @@ def algorithm_2_PGES(ss: SystemState, sp: StrategicProfile, max_iter: int = 1000
                 / calculate_workload_normalization(func_list=sec_func_list))
         if m_ik > 1792:
             m_ik = 1792
-        elif m_ik < 128:
-            m_ik = 128
+        elif m_ik < 256:
+            m_ik = 256
         mem_alloc[func.id] = m_ik
         comp_res_alloc[func.id] = RATIO * m_ik
 

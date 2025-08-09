@@ -51,14 +51,14 @@ class StrategicProfile:
                 sec_func_list = self.get_sec_func_list(sec_id=sec.id)
 
                 # 计算最优资源分配
-                opt_alloc, opt_total_exe_time = optimal_continuous_allocation(sec=sec,
-                                                                              func_list=sec_func_list, ratio=RATIO)
+                opt_alloc, opt_total_exe_time = optimal_continuous_allocation(sec=sec, func_list=sec_func_list,
+                                                                              ratio=RATIO)
 
                 # 获取该函数的最优分配计算资源
                 cr_ik = opt_alloc[func_id]['opt_cr_ik']
 
-                latency, energy = local_sec_execution(func=func, iot=iot, sec=sec,
-                                                      cr_ik=cr_ik)
+                latency, energy = local_sec_execution(func=func, iot=iot, sec=sec, cr_ik=cr_ik)
+
 
             # 策略3：协作SEC执行
             else:
@@ -69,22 +69,21 @@ class StrategicProfile:
                 sec_func_list = self.get_sec_func_list(sec_id=target_sec.id)
 
                 # 计算最优资源分配（注意：这里是协作SEC，不是本地SEC）
-                opt_alloc, opt_total_exe_time = optimal_continuous_allocation(sec=sec,
-                                                                              func_list=sec_func_list, ratio=RATIO)
+                opt_alloc, opt_total_exe_time = optimal_continuous_allocation(sec=sec, func_list=sec_func_list,
+                                                                              ratio=RATIO)
 
                 # 获取该函数的最优分配计算资源（注意：这里是协作SEC，不是本地SEC）
                 cr_ik = opt_alloc[func_id]['opt_cr_ik']
 
-                latency, energy = collaborative_sec_execution(func=func, iot=iot,
-                                                              local_sec=sec,
-                                                              target_sec=target_sec,
-                                                              sec_network=self.system_state.sec_network,
-                                                              cr_ik=cr_ik)
+                latency, energy = collaborative_sec_execution(func=func, iot=iot, local_sec=sec, target_sec=target_sec,
+                                                              sec_network=self.system_state.sec_network, cr_ik=cr_ik)
 
         # 计算归一化成本 (公式33)
         normalized_latency = latency / T_ref
         normalized_energy = energy / E_ref
         cost = OMEGA * normalized_latency + (1 - OMEGA) * normalized_energy
+        print(
+            f'函数{func.id} 在{"SEC执行" if self.strategy[func.id]["offloading"] == 1 else "IoT执行"} 归一化后成本{cost}：延迟 {normalized_latency}, 能耗 {normalized_energy}')
         return cost
 
     # 计算该策略面总成本

@@ -42,7 +42,7 @@ class IoTDevice:
         self.noise_power = noise_power  # σ 噪声功率，单位W
         # 香农公式
         snr = (self.tx_power * self.channel_gain) / self.noise_power
-        self.uplink_rate = self.bandwidth * math.log2(1 + snr) / 8 / 1024 / 1024  # 发送速率（Mbps）
+        self.uplink_rate = self.bandwidth * math.log2(1 + snr) / 8e6  # 发送速率，单位：Mbps（从bps转换为Mbps）
 
     def __repr__(self):
         return f'IoTDevice {self.id}: CPU {self.comp_resource}, TxPower {self.tx_power}, BW {self.bandwidth}, ChannelGain {self.channel_gain}, NoisePower {self.noise_power}, UplinkRate {self.uplink_rate}',
