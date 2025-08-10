@@ -1,3 +1,5 @@
+from typing import List
+
 from core.system_models.network_model import BaseStation, SECServer, IoTDevice, FunctionType, FunctionTask, SECNetwork
 
 
@@ -45,20 +47,32 @@ class SystemState:
     def set_sec_network(self, sec_network: SECNetwork):
         self.sec_network = sec_network
 
-    def get_base_station_count(self):
+    def get_base_station_count(self) -> int:
         return len(self.base_stations.keys())
 
-    def get_sec_server_count(self):
+    def get_sec_server_count(self) -> int:
         return len(self.sec_servers.keys())
 
-    def get_iot_device_count(self):
+    def get_iot_device_count(self) -> int:
         return len(self.iot_devices.keys())
 
-    def get_function_type_count(self):
+    def get_function_type_count(self) -> int:
         return len(self.function_types.keys())
 
-    def get_function_count(self):
+    def get_sec_server_instance(self, sec_id: int | str) -> SECServer:
+        return self.sec_servers[sec_id]['instance']
+
+    def get_function_type_list(self) -> List[FunctionType]:
+        return [_val['instance'] for _val in self.function_types.values()]
+
+    def get_function_instance(self, func_id: int | str) -> FunctionTask:
+        return self.functions[func_id]['instance']
+
+    def get_function_count(self) -> int:
         return len(self.functions.keys())
+
+    def get_function_list(self) -> List[FunctionTask]:
+        return [_val['instance'] for _val in self.functions.values()]
 
     '''Mapping Rule: F->U->BS->S'''
 

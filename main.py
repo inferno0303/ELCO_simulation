@@ -1,41 +1,54 @@
 import random
 import string
+from typing import List, Dict
 
-from core.system_models.resource_model import *
-from core.system_state import *
-from core.strategic_profile import *
 from config import *
-
-from core.algorithm.algorithm_1_LEAO import *
-from core.algorithm.algorithm_2_PGES import *
+from core.system_models.network_model import *
+from core.system_state import SystemState
+from core.strategic_profile import StrategicProfile
+from core.algorithm.algo_1_LEAO import algo_1_LEAO
+from core.algorithm.algo_2_PGES import algo_2_PGES
 
 
 def main():
     ss = SystemState()
 
-    for i in range(5):
+    # 初始化BS和SEC
+    for i in range(15):
         bs = BaseStation(id=i)
         rd_CR = random.randint(2500 * 4, 4000 * 16)
-        rd_M = random.randint(2 * 1024, 4 * 1024)
-        rd_bhBW = random.randint(200, 300)
+        rd_M = random.randint(16 * 1024, 64 * 1024)
+        rd_bhBW = random.randint(100, 200)
         sec = SECServer(id=i, comp_resource=rd_CR, memory=rd_M, backhaul_bw=rd_bhBW)
         ss.add_base_station(bs=bs, associated_sec_id=sec.id)
         ss.add_sec_server(sec=sec)
 
-    for i in range(15):
+    # 初始化IoT设备
+    for i in range(100):
         rd_CR = random.randint(400, 800)
-        iot = IoTDevice(id=i, comp_resource=rd_CR, tx_power=0.1, bandwidth=10_000_000, channel_gain=1e-5,
-                        noise_power=4e-14)
+        iot = IoTDevice(id=i, comp_resource=rd_CR, tx_power=0.1, bandwidth=5_000_000, channel_gain=1e-5,
+                        noise_power=1e-7)  # 10dB的SNR
         bs_id = random.randint(0, ss.get_base_station_count() - 1)  # 注意这里生成的随机数范围 a <= rd <= b
         ss.add_iot_device(iot=iot, associated_bs_id=bs_id)
 
-    for i in range(5):
-        type_id = random.choice(string.ascii_uppercase[:10])
-        image_size = random.randint(10, 50)
+    # 初始化函数类型
+    for i in range(10):
+        type_id = ord('A') + i
+        image_size = random.randint(50, 150)
         func_type = FunctionType(id=type_id, image_size=image_size)
         ss.add_function_type(func_type=func_type)
 
-    for i in range(75):
+    # 关联到SEC的已缓存列表
+    for sec_id, _val in ss.sec_servers.items():
+        sec: SECServer = _val['instance']
+        # 获取函数类型列表并随机抽取2个
+        cached_func_type: List[FunctionType] = random.sample(ss.get_function_type_list(), 3)
+
+        # 使用列表推导式直接获取它们的ID，并转换为集合
+        sec.cached_functions = {func_type.id for func_type in cached_func_type}
+
+    # 初始化函数任务
+    for i in range(1000):
         # 关联到 FunctionType
         _rd_key = random.choice(list(ss.function_types.keys()))
 
@@ -51,6 +64,7 @@ def main():
 
         ss.add_function(func=func, associated_iot_id=iot.id)
 
+    # 初始化SEC互联网络
     sn = SECNetwork()
     for sec_id, _val in ss.sec_servers.items():
         sec: SECServer = _val['instance']
@@ -65,39 +79,44 @@ def main():
                 continue
 
             rd_latency = random.uniform(0.02, 0.5)
-            rd_bandwidth = random.randint(10, 200)
+            rd_bandwidth = random.randint(100, 1000)
             sn.add_connection(server_id1=s1.id, server_id2=s2.id, latency=rd_latency, bandwidth=rd_bandwidth)
 
     ss.set_sec_network(sn)
 
-    # 创建一个策略剖面
+    # 初始化策略剖面
     sp = StrategicProfile(system_state=ss)
+    sp.reset_strategy()
 
-    total_cost = sp.calc_total_cost()
-    print(f'优化前系统总成本：{total_cost}')
+    print(f'*结果 IoT_Only 系统总成本：{sp.calc_total_cost():4f}')
 
     # 算法1：LEAO
-    alpha: Dict[str, int] = algorithm_1_LEAO(system_state=ss)
+    alpha: Dict[str, int] = algo_1_LEAO(ss=ss)
 
     # 更新策略剖面
     for func_id, offloading in alpha.items():
-        sp.strategy[func_id]['offloading'] = offloading
-        sp.strategy[func_id]['scheduling'] = ss.f2s_mapping(func_id=func_id).id
+        if offloading == 1:
+            sp.strategy[func_id]['offloading'] = offloading
+            sp.strategy[func_id]['scheduling'] = ss.f2s_mapping(func_id=func_id).id  # 卸载到本地SEC
 
-    total_cost = sp.calc_total_cost()
-    print(f'算法1优化后系统总成本：{total_cost}')
+    print(f'*结果 算法1-LEAO 优化后系统总成本：{sp.calc_total_cost():4f}')
 
     offloading_count = 0
     for func_id, _val in sp.strategy.items():
         if _val['offloading'] == 1:
             offloading_count += 1
-    print(f'卸载到SEC侧的百分比为：{offloading_count / len(sp.strategy.keys()) * 100}%，数量：{offloading_count}，总数：{len(sp.strategy.keys())}')
+    print(
+        f'*结果 卸载到SEC侧的百分比为：{offloading_count / len(sp.strategy.keys()) * 100:.2f}%，数量：{offloading_count}，总数：{len(sp.strategy.keys())}')
 
     # 算法2：PGES
-    beta, mem_alloc, cr_alloc = algorithm_2_PGES(ss=ss, sp=sp, max_iter=10000, delta=10e-3)
+    beta, mem_alloc, cr_alloc = algo_2_PGES(ss=ss, sp=sp)
 
-    total_cost = sp.calc_total_cost()
-    print(f'算法2优化后系统总成本：{total_cost}')
+    # 更新策略面
+    for func_id, scheduling in beta.items():
+        if sp.strategy[func_id]['offloading'] == 1:
+            sp.strategy[func_id]['scheduling'] = scheduling
+
+    print(f'*结果 算法2-PGES 优化后系统总成本：{sp.calc_total_cost():4f}')
 
 
 if __name__ == '__main__':

@@ -14,8 +14,7 @@ class BaseStation:
 class SECServer:
     """边缘服务器实体，与基站协同部署"""
 
-    def __init__(self,
-                 id: int | str,
+    def __init__(self, id: int | str,
                  comp_resource: float,  # CR_k 计算资源 (MHz)
                  memory: float,  # M_k 内存资源 (MB)
                  backhaul_bw: float):  # bw_bh_k 回程带宽 (Mbps)
@@ -42,7 +41,7 @@ class IoTDevice:
         self.noise_power = noise_power  # σ 噪声功率，单位W
         # 香农公式
         snr = (self.tx_power * self.channel_gain) / self.noise_power
-        self.uplink_rate = self.bandwidth * math.log2(1 + snr) / 8e6  # 发送速率，单位：Mbps（从bps转换为Mbps）
+        self.uplink_rate = self.bandwidth * math.log2(1 + snr) / 1e6  # 发送速率，单位：Mbps（从bps转换为Mbps）
 
     def __repr__(self):
         return f'IoTDevice {self.id}: CPU {self.comp_resource}, TxPower {self.tx_power}, BW {self.bandwidth}, ChannelGain {self.channel_gain}, NoisePower {self.noise_power}, UplinkRate {self.uplink_rate}',
@@ -91,7 +90,7 @@ class SECNetwork:
         key = tuple(sorted((server_id1, server_id2)))
         self.edges[key] = (latency, bandwidth)
 
-    def get_connection(self, server_id1: int, server_id2: int) -> tuple:
+    def get_connection(self, sec_id_1: int | str, sec_id_2: int | str) -> tuple:
         """
         返回server1与server2之间的延迟和带宽。
         - 如果有直接边，直接返回（latency, bandwidth）
@@ -100,11 +99,11 @@ class SECNetwork:
         import heapq
 
         # 验证服务器存在
-        if server_id1 not in self.servers or server_id2 not in self.servers:
+        if sec_id_1 not in self.servers or sec_id_2 not in self.servers:
             raise ValueError("指定的服务器不存在")
 
         # 如果直接相连，返回该边信息
-        key = tuple(sorted((server_id1, server_id2)))
+        key = tuple(sorted((sec_id_1, sec_id_2)))
         if key in self.edges:
             return self.edges[key]
 
@@ -117,15 +116,15 @@ class SECNetwork:
         # Dijkstra 初始化
         dist = {sid: float('inf') for sid in self.servers}
         prev = {sid: None for sid in self.servers}
-        dist[server_id1] = 0
-        pq = [(0, server_id1)]
+        dist[sec_id_1] = 0
+        pq = [(0, sec_id_1)]
 
         # 执行最短路径
         while pq:
             current_dist, u = heapq.heappop(pq)
             if current_dist > dist[u]:
                 continue
-            if u == server_id2:
+            if u == sec_id_2:
                 break
             for v, weight in adj[u]:
                 new_dist = current_dist + weight
@@ -135,19 +134,19 @@ class SECNetwork:
                     heapq.heappush(pq, (new_dist, v))
 
         # 目标不可达
-        if dist[server_id2] == float('inf'):
+        if dist[sec_id_2] == float('inf'):
             return None, None
 
         # 重建路径以计算瓶颈带宽
         path = []
-        node = server_id2
+        node = sec_id_2
         while node is not None:
             path.append(node)
             node = prev[node]
         path.reverse()
 
         # 计算路径总延迟
-        total_latency = dist[server_id2]
+        total_latency = dist[sec_id_2]
         # 计算瓶颈带宽
         bandwidths = []
         for i in range(len(path) - 1):
