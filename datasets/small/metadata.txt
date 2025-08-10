@@ -1,0 +1,5 @@
+seed: 42
+bs_and_sec: 5
+iot_device: 20
+function_type: 5
+function_task: 50

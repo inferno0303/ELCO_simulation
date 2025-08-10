@@ -1,4 +1,4 @@
-LOG_LEVEL = 'n'
+LOG_LEVEL = 'no'
 
 IOT_EXE_EFFICIENT = 5e-9  # IoT设备计算能耗系数
 IOT_TX_EFFICIENT = 0.2  # IoT 发射时的能量效率

@@ -1,120 +1,95 @@
+# ELCO Simulation Framework
 
-## 📘 README.md — ELCO\_simulation
-
-### ⚡ Project: **ELCO\_simulation**
-
-> Energy-Latency Collaborative Offloading (ELCO): Simulation Framework for Edge Function Scheduling
+**ELCO** (Energy–Latency Collaborative Offloading) is a simulation framework for evaluating and optimizing task offloading strategies in **SEC (Smart Edge Computing)** networks.
+It models IoT devices, base stations, and SEC servers, and implements optimization algorithms to minimize system cost under energy and latency constraints.
 
 ---
 
-### 🌐 Overview
-
-**ELCO\_simulation** is a simulation platform that models, evaluates, and optimizes function task scheduling in **serverless edge computing (SEC)** systems. It implements the full-stack decision pipeline proposed in the **ELCO** framework, supporting:
-
-* Three-tier execution: IoT device, local SEC, collaborative SEC
-* Cold start modeling, container caching, wireless transmission
-* Optimal resource allocation with discrete constraints
-* Multi-objective cost model (latency–energy tradeoff)
-* Modular and extensible architecture for algorithms and strategies
-
----
-
-### 🏗️ Directory Structure
+## 📂 Project Structure
 
 ```
 ELCO_simulation/
-├── .venv/                  # Python virtual environment (not tracked)
-├── algorithms/             # Custom scheduling algorithms (e.g., LEAO, PGES, baselines)
-├── core/                   # Core simulation engine
-│   ├── cost_model.py         # Computes cost_i based on α, β, and resource allocation
-│   ├── entity_manager.py     # Entity classes: tasks, devices, servers, function types
-│   ├── network_model.py      # Inter-SEC graph structure and routing
-│   ├── resource_model.py     # Resource allocation optimizer (continuous + discrete)
-│   ├── strategic_profile.py  # Encodes α_i, β_ik decisions per task
-│   └── strategy_model.py     # Latency and energy computation for each strategy
 │
-├── datasets/              # Task profiles, IoT device configs, container metadata
-├── results/               # Output folder for metrics, logs, and evaluation results
-├── utils/                 # Miscellaneous utilities (e.g., logging, plotting)
+├── core/                         # Core simulation logic
+│   ├── system_models/            # Mathematical models of system entities
+│   │   ├── network_model.py      # SEC network topology, devices, servers, links
+│   │   └── ...                   # Other entity definitions
+│   ├── system_state.py           # Maintains all instances & their relationships
+│   ├── strategic_profile.py      # Decision profile (offloading, scheduling, resource allocation)
+│   └── algorithm/                # Optimization algorithms
+│       ├── algo_1_LEAO.py        # Latency–Energy Aware Offloading (LEAO)
+│       └── algo_2_PGES.py        # Progressive Greedy Energy Scheduling (PGES)
 │
-├── config.py              # Global simulation constants and parameters
-├── main.py                # Main entry point to run simulations
-├── requirements.txt       # Python package dependencies
-└── README.md              # You're here!
+├── utils/
+│   └── dataset_loader.py         # Loads CSV datasets into SystemState
+│
+├── scripts/
+│   └── generate_datasets.py      # Generates datasets in CSV format
+│
+├── datasets/                     # Generated datasets
+│   ├── small/                    # Small-scale dataset
+│   ├── medium/                   # Medium-scale dataset
+│   └── large/                    # Large-scale dataset
+│
+└── main.py                       # Main simulation entry point
 ```
 
 ---
 
-### ⚙️ Installation
+## ⚙️ Workflow
 
-1. Set up a virtual environment:
-
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Or use .venv\Scripts\activate on Windows
-   ```
-
-2. Install dependencies:
+1. **Generate datasets**
+   Use the dataset generator to produce network, device, and task configurations.
 
    ```bash
-   pip install -r requirements.txt
+   python scripts/generate_datasets.py
    ```
+
+   This will create datasets under `datasets/` with three scales: **small**, **medium**, and **large**.
+
+2. **Load dataset & initialize system state**
+   The dataset loader reads the CSV files and builds a `SystemState` object containing all entities and their connections.
+
+3. **Run optimization algorithms**
+   The framework supports multiple optimization strategies:
+
+   * **LEAO**: Determines whether to offload tasks to SEC servers.
+   * **PGES**: Allocates resources and schedules tasks to minimize cost.
+
+4. **Evaluate results**
+   After each algorithm step, the system cost and offloading ratio are reported.
 
 ---
 
-### 🚀 How to Run
+## 🚀 Example Usage
 
 ```bash
 python main.py
 ```
 
-You can modify the simulation settings in `config.py` (e.g., number of devices, memory-CPU ratio, ω tradeoff weight, cold-start parameters, etc.).
+Example output:
+
+```
+* IoT_Only total system cost: 1831.8661
+* LEAO total system cost: 1431.3511
+* Offloading to SEC ratio: 33.00%, 330 / 1000
+* PGES total system cost: 1291.2973
+```
 
 ---
 
-### 🧠 Key Components
+## 📜 Main Components
 
-| Module                 | Description                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `entity_manager.py`    | Defines `FunctionTask`, `FunctionType`, `IoTDevice`, and `SECServer`              |
-| `strategy_model.py`    | Implements latency/energy computation for local, SEC, and collaborative execution |
-| `resource_model.py`    | Continuous and discretized optimal memory/CPU allocation                          |
-| `cost_model.py`        | Computes unified cost\_i using α\_i and β\_ik                                     |
-| `strategic_profile.py` | Manages task scheduling decisions (α, β)                                          |
-| `network_model.py`     | Models inter-SEC connectivity and routes                                          |
+* **`SystemState`**
+  Stores all entities (IoT devices, base stations, SEC servers) and maintains mapping relationships.
 
----
+* **`StrategicProfile`**
+  Manages decision variables (offloading flags, scheduling targets, resource allocations).
+  Optimization algorithms modify this profile to improve performance.
 
-### 📊 Output
+* **Algorithms**
 
-Simulation results (e.g., per-task latency, energy, and cost) will be saved to `results/` folder. You can implement visualizers or reporters in `utils/` to generate plots and tables for evaluation.
+  * `algo_1_LEAO`: Selects tasks for offloading to SEC.
+  * `algo_2_PGES`: Allocates CPU & memory resources for scheduled tasks.
 
 ---
-
-### 📌 Customization Tips
-
-* 🔧 To plug in a new algorithm, add it to `algorithms/` and call it from `main.py`
-* 🔁 Modify `strategic_profile.py` to generate fixed or dynamic scheduling profiles
-* 🧪 Use `datasets/` to store task traces, server topologies, or real-world configurations
-
----
-
-### 📄 License
-
-This project is for **academic research and simulation purposes** only. For commercial use, please contact the author.
-
----
-
-### ✍️ Author
-
-Developed by **xbc8118@github.com**
-
-ELCO: A Collaborative Offloading Framework for Latency and Energy Tradeoffs in Serverless Edge Computing
-
----
-
-### 🔮 Future Work
-
-* Integration with LEAO or game-theoretic solvers
-* Real trace-driven evaluation
-* Multi-agent reinforcement learning extensions
