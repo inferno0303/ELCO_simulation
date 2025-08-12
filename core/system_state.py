@@ -62,14 +62,17 @@ class SystemState:
     def get_sec_server_instance(self, sec_id: int | str) -> SECServer:
         return self.sec_servers[sec_id]['instance']
 
+    def get_sec_list(self) -> List[SECServer]:
+        return [_val['instance'] for _val in self.sec_servers.values()]
+
     def get_function_type_list(self) -> List[FunctionType]:
         return [_val['instance'] for _val in self.function_types.values()]
 
-    def get_function_instance(self, func_id: int | str) -> FunctionTask:
-        return self.functions[func_id]['instance']
-
     def get_function_count(self) -> int:
         return len(self.functions.keys())
+
+    def get_function_instance(self, func_id: int | str) -> FunctionTask:
+        return self.functions[func_id]['instance']
 
     def get_function_list(self) -> List[FunctionTask]:
         return [_val['instance'] for _val in self.functions.values()]

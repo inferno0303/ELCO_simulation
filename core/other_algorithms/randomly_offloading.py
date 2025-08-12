@@ -14,7 +14,7 @@
 """
 
 import random
-from typing import List
+from typing import List, Dict
 
 from core.system_models.cost_model import local_device_execution, local_sec_execution
 from core.system_models.network_model import SECServer, IoTDevice, FunctionTask
@@ -36,9 +36,15 @@ class RandomlyOffloading:
         # 获取函数列表
         self.func_list: List[FunctionTask] = ss.get_function_list()
 
+        # 获取SEC列表
+        self.sec_list: List[SECServer] = ss.get_sec_list()
+
     def run(self) -> StrategicProfile:
         # 随机化函数列表
         random.shuffle(self.func_list)
+
+        # build initial residual resource mapping for each SEC (unit: MB)
+        sec_residual: Dict[int, float] = {sec.id: calc_effective_res(sec_server=sec) for sec in self.sec_list}
 
         # 分别卸载到本地SEC，直到本地SEC资源限制
         for func in self.func_list:
@@ -46,32 +52,17 @@ class RandomlyOffloading:
             # 获取本地SEC
             loc_sec: SECServer = self.ss.f2s_mapping(func_id=func.id)
 
-            # 计算本地SEC剩余资源
-            S_k = calc_effective_res(sec_server=loc_sec)
-
-            for _func_id, _val in self.sp.strategy.items():
-                if _val['offloading'] == 0: continue
-                if _val['scheduling'] == loc_sec.id:
-                    _func = self.ss.get_function_instance(func_id=_func_id)
-                    S_k -= self.const_cr  # 固定分配
-
-            # 如果还有剩余资源，则卸载到本地SEC
-            if S_k >= self.const_cr:
+            if sec_residual[loc_sec.id] >= self.const_cr:
+                sec_residual[loc_sec.id] -= self.const_cr
                 self.sp.strategy[func.id]['offloading'] = 1
                 self.sp.strategy[func.id]['scheduling'] = loc_sec.id
 
         return self.sp
 
-    def calc_cost(self):
+    def calc_cost(self) -> float:
         cost = 0.0
-
-        # 获取函数列表
-        func_list: List[FunctionTask] = self.ss.get_function_list()
-
-        for func in func_list:
-
+        for func in self.ss.get_function_list():
             iot: IoTDevice = self.ss.f2u_mapping(func_id=func.id)
-
             if self.sp.strategy[func.id]['offloading'] == 0:
                 latency, energy = local_device_execution(func=func, iot=iot)
             else:

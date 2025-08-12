@@ -30,13 +30,16 @@ from utils.dataset_loader import load_dataset
 from core.algorithm.algo_1_LEAO import algo_1_LEAO
 from core.algorithm.algo_2_PGES import algo_2_PGES
 from core.other_algorithms.randomly_offloading import RandomlyOffloading
+from core.other_algorithms.randomly_scheduling import RandomlyScheduling
+from core.other_algorithms.workload_priority_offloading import WorkloadPriorityOffloading
+from core.other_algorithms.workload_priority_scheduling import WorkloadPriorityScheduling
 
 
 def main():
     """Run the ELCO simulation with a predefined dataset and optimization workflow."""
 
     # === Step 1: Load dataset and initialize system state ===
-    ss: SystemState = load_dataset("large", datasets_root="datasets")
+    ss: SystemState = load_dataset("medium", datasets_root="datasets")
 
     # === Step 2: Baseline evaluation (IoT execution only) ===
     sp = StrategicProfile(system_state=ss)
@@ -67,18 +70,57 @@ def main():
             sp.strategy[func_id]['scheduling'] = scheduling
     print(f'* PGES total system cost: {sp.calc_total_cost():.4f}')
 
-    # 其他算法：随机卸载
+    # 其他算法1：随机卸载
     print("============")
-    print("* 执行随机卸载方法 RandomlyOffloading")
+    print("* 其他算法1-随机卸载方法 RandomlyOffloading")
     ro: RandomlyOffloading = RandomlyOffloading(ss=ss, const_cr=1024)
     ro.run()
     ro_cost = ro.calc_cost()
-    print(f"* 结果：随机卸载方法成本：{ro_cost}")
+    print(f"* 结果：其他算法1-随机卸载方法 RandomlyOffloading 成本：{ro_cost}")
 
     # Offloading ratio statistics
     offloading_count = sum(1 for _, val in ro.sp.strategy.items() if val['offloading'] == 1)
     print(f'* Offloading to SEC ratio: {offloading_count / len(ro.sp.strategy) * 100:.2f}%, '
-          f'{offloading_count} / {len(sp.strategy)}')
+          f'{offloading_count} / {len(ro.sp.strategy)}')
+
+    # 其他算法2：随机调度
+    print("============")
+    print("* 其他算法2-随机调度方法 RandomlyScheduling")
+    rs: RandomlyScheduling = RandomlyScheduling(ss=ss, const_cr=1024)
+    rs.run()
+    rs_cost = rs.calc_cost()
+    print(f"* 结果：其他算法2-随机调度方法 RandomlyScheduling 成本：{rs_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in rs.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(rs.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(rs.sp.strategy)}')
+
+    # 其他算法3：按工作量降序卸载
+    print("============")
+    print("* 其他算法3-工作量降序卸载方法 WorkloadPriorityOffloading")
+    wpo: WorkloadPriorityOffloading = WorkloadPriorityOffloading(ss=ss)
+    wpo.run()
+    wpo_cost = wpo.calc_cost()
+    print(f"* 结果：其他算法3-工作量降序卸载方法 WorkloadPriorityOffloading 成本：{wpo_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wpo.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wpo.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wpo.sp.strategy)}')
+
+    # 其他算法4：按工作量降序调度
+    print("============")
+    print("* 其他算法4-按工作量降序调度方法 WorkloadPriorityScheduling")
+    wps: WorkloadPriorityScheduling = WorkloadPriorityScheduling(ss=ss)
+    wps.run()
+    wps_cost = wps.calc_cost()
+    print(f"* 结果：其他算法4-按工作量降序调度方法 WorkloadPriorityScheduling 成本：{wps_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wps.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wps.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wps.sp.strategy)}')
 
 
 if __name__ == '__main__':
