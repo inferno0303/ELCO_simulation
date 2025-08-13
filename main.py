@@ -31,8 +31,12 @@ from core.algorithm.algo_1_LEAO import algo_1_LEAO
 from core.algorithm.algo_2_PGES import algo_2_PGES
 from core.other_algorithms.randomly_offloading import RandomlyOffloading
 from core.other_algorithms.randomly_scheduling import RandomlyScheduling
-from core.other_algorithms.workload_priority_offloading import WorkloadPriorityOffloading
-from core.other_algorithms.workload_priority_scheduling import WorkloadPriorityScheduling
+from core.other_algorithms.workload_priority_offloading_avg import WorkloadPriorityOffloadingAvg
+from core.other_algorithms.workload_priority_scheduling_avg import WorkloadPrioritySchedulingAvg
+from core.other_algorithms.workload_priority_offloading_lp import WorkloadPriorityOffloadingLP
+from core.other_algorithms.workload_priority_scheduling_lp import WorkloadPrioritySchedulingLP
+from core.other_algorithms.workload_priority_offloading_wf import WorkloadPriorityOffloadingWF
+from core.other_algorithms.workload_priority_scheduling_wf import WorkloadPrioritySchedulingWF
 
 
 def main():
@@ -98,11 +102,11 @@ def main():
 
     # 其他算法3：按工作量降序卸载
     print("============")
-    print("* 其他算法3-工作量降序卸载方法 WorkloadPriorityOffloading")
-    wpo: WorkloadPriorityOffloading = WorkloadPriorityOffloading(ss=ss)
+    print("* 其他算法3-工作量降序卸载方法（平均资源分配） WorkloadPriorityOffloadingAvg")
+    wpo: WorkloadPriorityOffloadingAvg = WorkloadPriorityOffloadingAvg(ss=ss)
     wpo.run()
     wpo_cost = wpo.calc_cost()
-    print(f"* 结果：其他算法3-工作量降序卸载方法 WorkloadPriorityOffloading 成本：{wpo_cost}")
+    print(f"* 结果：其他算法3-工作量降序卸载方法 WorkloadPriorityOffloadingAvg 成本：{wpo_cost}")
 
     # Offloading ratio statistics
     offloading_count = sum(1 for _, val in wpo.sp.strategy.items() if val['offloading'] == 1)
@@ -111,16 +115,68 @@ def main():
 
     # 其他算法4：按工作量降序调度
     print("============")
-    print("* 其他算法4-按工作量降序调度方法 WorkloadPriorityScheduling")
-    wps: WorkloadPriorityScheduling = WorkloadPriorityScheduling(ss=ss)
+    print("* 其他算法4-按工作量降序调度方法（平均资源分配） WorkloadPrioritySchedulingAvg")
+    wps: WorkloadPrioritySchedulingAvg = WorkloadPrioritySchedulingAvg(ss=ss)
     wps.run()
     wps_cost = wps.calc_cost()
-    print(f"* 结果：其他算法4-按工作量降序调度方法 WorkloadPriorityScheduling 成本：{wps_cost}")
+    print(f"* 结果：其他算法4-按工作量降序调度方法 WorkloadPrioritySchedulingAvg 成本：{wps_cost}")
 
     # Offloading ratio statistics
     offloading_count = sum(1 for _, val in wps.sp.strategy.items() if val['offloading'] == 1)
     print(f'* Offloading to SEC ratio: {offloading_count / len(wps.sp.strategy) * 100:.2f}%, '
           f'{offloading_count} / {len(wps.sp.strategy)}')
+
+    # 其他算法5：按工作量降序卸载（线性资源分配）
+    print("============")
+    print("* 其他算法5-按工作量降序卸载（线性资源分配）方法 WorkloadPriorityOffloadingLP")
+    wpoLP: WorkloadPriorityOffloadingLP = WorkloadPriorityOffloadingLP(ss=ss)
+    wpoLP.run()
+    wpoLP_cost = wpoLP.calc_cost()
+    print(f"* 结果：其他算法5-按工作量降序卸载（线性资源分配）方法 WorkloadPriorityOffloadingLP 成本：{wpoLP_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wpoLP.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wpoLP.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wpoLP.sp.strategy)}')
+
+    # 其他算法6：按工作量降序调度（线性资源分配）
+    print("============")
+    print("* 其他算法6-按工作量降序调度（线性资源分配）方法 WorkloadPrioritySchedulingLP")
+    wpsLP: WorkloadPrioritySchedulingLP = WorkloadPrioritySchedulingLP(ss=ss)
+    wpsLP.run()
+    wpsLP_cost = wpsLP.calc_cost()
+    print(f"* 结果：其他算法6-按工作量降序调度（线性资源分配）方法 WorkloadPrioritySchedulingLP 成本：{wpsLP_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wpsLP.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wpsLP.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wpsLP.sp.strategy)}')
+
+    # 其他算法7：按工作量降序卸载（注水算法资源分配）
+    print("============")
+    print("* 其他算法7-按工作量降序卸载（注水算法资源分配） WorkloadPriorityOffloadingWF")
+    wpoWF: WorkloadPriorityOffloadingWF = WorkloadPriorityOffloadingWF(ss=ss)
+    wpoWF.run()
+    wpoWF_cost = wpoWF.calc_cost()
+    print(f"* 结果：其他算法7-按工作量降序卸载（注水算法资源分配） WorkloadPriorityOffloadingWF 成本：{wpoWF_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wpoWF.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wpoWF.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wpoWF.sp.strategy)}')
+
+    # 其他算法8：按工作量降序调度（注水算法资源分配）
+    print("============")
+    print("* 其他算法8-按工作量降序调度（注水算法资源分配） WorkloadPrioritySchedulingWF")
+    wpsWF: WorkloadPrioritySchedulingWF = WorkloadPrioritySchedulingWF(ss=ss)
+    wpsWF.run()
+    wpsWF_cost = wpsWF.calc_cost()
+    print(f"* 结果：其他算法8-按工作量降序调度（注水算法资源分配） WorkloadPrioritySchedulingWF 成本：{wpsWF_cost}")
+
+    # Offloading ratio statistics
+    offloading_count = sum(1 for _, val in wpsWF.sp.strategy.items() if val['offloading'] == 1)
+    print(f'* Offloading to SEC ratio: {offloading_count / len(wpsWF.sp.strategy) * 100:.2f}%, '
+          f'{offloading_count} / {len(wpsWF.sp.strategy)}')
 
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from core.system_models.cost_model import local_device_execution, local_sec_execution
@@ -8,7 +9,7 @@ from core.strategic_profile import StrategicProfile
 from config import *
 
 
-class WorkloadPriorityOffloading:
+class WorkloadPriorityOffloadingWF:
     def __init__(self, ss: SystemState):
         self.ss = ss
 
@@ -19,12 +20,12 @@ class WorkloadPriorityOffloading:
         # 获取函数列表
         self.func_list: List[FunctionTask] = ss.get_function_list()
 
-        # 统计每个SEC服务器上 offloading 函数的数量
-        self.sec_func_counts = dict.fromkeys([sec_id.id for sec_id in self.ss.get_sec_list()], 0)
+        # 统计每个SEC服务器上 offloading 负载因子总量 C_k = sqrt(ni*c*i)
+        self.sec_total_workload_factor = dict.fromkeys([sec.id for sec in self.ss.get_sec_list()], 0.0)
 
     def run(self) -> StrategicProfile:
         # 按函数负载降序排列
-        sorted_func_list = sorted(self.func_list, key=lambda _func: _func.workload, reverse=True)
+        sorted_func_list = sorted(self.func_list, key=lambda _func: (_func.invocations * _func.workload), reverse=True)
 
         # 按顺序卸载到本地SEC，直到本地SEC资源限制
         for func in sorted_func_list:
@@ -33,10 +34,12 @@ class WorkloadPriorityOffloading:
             loc_sec: SECServer = self.ss.f2s_mapping(func_id=func.id)
 
             # 判断本地SEC是否超载
-            S_k = calc_effective_res(sec_server=loc_sec)
-            cr_ik = S_k / (self.sec_func_counts[loc_sec.id] + 1)
-            if cr_ik < 128 * RATIO:
-                continue
+            S_k = calc_effective_res(loc_sec)
+            sqrt_nc = math.sqrt(func.invocations * func.workload)
+            c_i = func.invocations * func.workload
+            cr_ik = RATIO * S_k * sqrt_nc / (self.sec_total_workload_factor[loc_sec.id] + sqrt_nc)
+            # if cr_ik < 128 * RATIO:
+            #     continue
 
             # 计算卸载前的cost
             prev_cost = self.calc_cost()
@@ -44,7 +47,7 @@ class WorkloadPriorityOffloading:
             # 卸载当前函数
             self.sp.strategy[func.id]['offloading'] = 1
             self.sp.strategy[func.id]['scheduling'] = loc_sec.id
-            self.sec_func_counts[loc_sec.id] += 1
+            self.sec_total_workload_factor[loc_sec.id] += math.sqrt(func.invocations * func.workload)
 
             # 计算卸载后的cost
             next_cost = self.calc_cost()
@@ -53,7 +56,7 @@ class WorkloadPriorityOffloading:
             if next_cost > prev_cost:
                 self.sp.strategy[func.id]['offloading'] = 0
                 self.sp.strategy[func.id]['scheduling'] = None
-                self.sec_func_counts[loc_sec.id] -= 1
+                self.sec_total_workload_factor[loc_sec.id] -= math.sqrt(func.invocations * func.workload)
 
         return self.sp
 
@@ -67,9 +70,10 @@ class WorkloadPriorityOffloading:
             else:
                 loc_sec: SECServer = self.ss.f2s_mapping(func_id=func.id)
 
-                # 计算平均分给每个函数任务的资源
-                cr_ik = calc_effective_res(loc_sec) / self.sec_func_counts[loc_sec.id]
-
+                # 按每个函数的任务量线根据注水算法分配计算资源
+                S_k = calc_effective_res(loc_sec)
+                sqrt_nc = math.sqrt(func.invocations * func.workload)
+                cr_ik = RATIO * S_k * sqrt_nc / self.sec_total_workload_factor[loc_sec.id]
                 latency, energy = local_sec_execution(func=func, iot=iot, sec=loc_sec, cr_ik=cr_ik)
 
             # 计算归一化成本 (公式33)

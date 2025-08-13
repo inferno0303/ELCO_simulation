@@ -9,7 +9,7 @@ from core.strategic_profile import StrategicProfile
 from config import *
 
 
-class WorkloadPriorityScheduling:
+class WorkloadPrioritySchedulingAvg:
     def __init__(self, ss: SystemState):
         self.ss = ss
         self.sp = StrategicProfile(system_state=ss)
@@ -18,7 +18,7 @@ class WorkloadPriorityScheduling:
         # 获取函数列表（按负载优先）
         self.func_list: List[FunctionTask] = sorted(
             ss.get_function_list(),
-            key=lambda f: f.workload,
+            key=lambda f: f.invocations * f.workload,
             reverse=True
         )
 
@@ -45,8 +45,9 @@ class WorkloadPriorityScheduling:
 
     def try_assign(self, func: FunctionTask, sec: SECServer) -> bool:
         """尝试将 func 卸载到指定 SEC，如果 cost 下降则成功"""
-        # 判断是否有资源
-        cr_ik = calc_effective_res(sec) / (self.sec_func_counts[sec.id] + 1)
+        # 判断是否超载
+        S_k = calc_effective_res(sec_server=sec)
+        cr_ik = RATIO * S_k / (self.sec_func_counts[sec.id] + 1)
         if cr_ik < 128 * RATIO:
             return False
 
@@ -95,12 +96,14 @@ class WorkloadPriorityScheduling:
 
                 # 策略2：本地 SEC
                 if target_id == loc_sec.id:
-                    cr_ik = calc_effective_res(loc_sec) / self.sec_func_counts[loc_sec.id]
+                    S_k = calc_effective_res(loc_sec)
+                    cr_ik = RATIO * S_k / self.sec_func_counts[loc_sec.id]
                     latency, energy = local_sec_execution(func, iot, loc_sec, cr_ik)
                 # 策略3：协作 SEC
                 else:
                     target_sec: SECServer = self.ss.get_sec_server_instance(target_id)
-                    cr_ik = calc_effective_res(target_sec) / self.sec_func_counts[target_sec.id]
+                    S_k = calc_effective_res(target_sec)
+                    cr_ik = RATIO * S_k / self.sec_func_counts[target_sec.id]
                     latency, energy = collab_sec_execution(func, iot, loc_sec, target_sec, self.ss.sec_network, cr_ik)
 
             # 计算归一化成本 (公式33)
