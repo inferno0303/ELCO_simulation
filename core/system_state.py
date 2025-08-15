@@ -1,6 +1,7 @@
 from typing import List
 
 from core.system_models.network_model import BaseStation, SECServer, IoTDevice, FunctionType, FunctionTask, SECNetwork
+from config import *
 
 
 class SystemState:
@@ -64,6 +65,18 @@ class SystemState:
 
     def get_sec_list(self) -> List[SECServer]:
         return [_val['instance'] for _val in self.sec_servers.values()]
+
+    # 计算SEC总内存 (单位: MB)
+    def get_sec_total_mem(self) -> float:
+        S_total = 0.0
+        for sec_id, _val in self.sec_servers.items():
+            sec: SECServer = self.get_sec_server_instance(sec_id)
+            S_total += min(sec.memory, sec.comp_resource / RATIO)
+        return S_total
+
+    # 计算SEC总内存 (单位: MHz)
+    def get_sec_total_comp_res(self) -> float:
+        return self.get_sec_total_mem() * RATIO
 
     def get_function_type_list(self) -> List[FunctionType]:
         return [_val['instance'] for _val in self.function_types.values()]

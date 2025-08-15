@@ -3,12 +3,12 @@ from core.system_models.network_model import *
 from config import *
 
 
-def calc_effective_res(sec_server: SECServer) -> float:
+def calc_effective_res(sec: SECServer) -> float:
     # S_k^* = min(M_k, CR_k / r)
-    return min(sec_server.memory, sec_server.comp_resource / RATIO)
+    return min(sec.memory, sec.comp_resource / RATIO)
 
 
-def calc_workload_normalization(func_list: List[FunctionTask]) -> float:
+def calc_workload(func_list: List[FunctionTask]) -> float:
     # 计算工作负载归一化因子 C_k = Σ√(n_j c_j)
     return sum((func.invocations * func.workload) ** 0.5 for func in func_list)
 
@@ -25,15 +25,15 @@ def calc_sec_optim_res_alloc(sec: SECServer, func_list: List[FunctionTask]):
 
     # 计算参数
     S_k = calc_effective_res(sec)
-    C_k = calc_workload_normalization(func_list)
+    workload_factor = calc_workload(func_list)
 
     opt_alloc = {}
     for func in func_list:
         # 计算√(n_i c_i)
-        sqrt_nc = (func.invocations * func.workload) ** 0.5
+        func_workload_factor = (func.invocations * func.workload) ** 0.5
 
         # 公式11: 最优内存分配
-        m_ik = (sqrt_nc * S_k) / C_k
+        m_ik = func_workload_factor / workload_factor * S_k
 
         # 公式12: 最优CPU分配
         cr_ik = RATIO * m_ik
@@ -42,6 +42,6 @@ def calc_sec_optim_res_alloc(sec: SECServer, func_list: List[FunctionTask]):
         opt_alloc[func.id] = {'opt_m_ik': m_ik, 'opt_cr_ik': cr_ik}
 
     # 公式14: 最小总完成时间
-    opt_total_exe_time = (C_k ** 2) / (RATIO * S_k)
+    opt_total_exe_time = (workload_factor ** 2) / (RATIO * S_k)
 
     return opt_alloc, opt_total_exe_time

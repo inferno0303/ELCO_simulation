@@ -1,0 +1,23 @@
+dataset scale,algorithm name,offload method,schedule method,res alloc method,offload ratio,system cost
+medium,LEAO,LEAO,,FIXED-512,0.615,278.528538675051
+medium,LEAO,LEAO,,FAIR,0.72,217.68199125606694
+medium,LEAO,LEAO,,LP,0.665,216.3302777300497
+medium,LEAO,LEAO,,WF,0.71,215.6595388544678
+medium,LEAO+PGES,LEAO,PGES,WF,0.71,186.80931629270447
+medium,IoTOnly,,,,0.0,357.80222214034166
+medium,SECOnlyLocal,SECOnlyLocal,,FAIR,1.0,319.847204839364
+medium,SECOnlyLocal,SECOnlyLocal,,LP,1.0,320.58574414563634
+medium,SECOnlyLocal,SECOnlyLocal,,WF,1.0,316.37729198566865
+medium,OptimalOffload,Optimal,,FAIR,0.64,214.75908520997663
+medium,OptimalOffload,Optimal,,LP,0.64,214.90079267617762
+medium,OptimalOffload,Optimal,,WF,0.65,213.7016770464995
+medium,RandomOffload,Random,,FAIR,0.505,331.673766767752
+medium,RandomOffload,Random,,LP,0.53,313.03915726959303
+medium,RandomOffload,Random,,WF,0.48,322.2261807972139
+medium,SECOnlyRRLB,SECOnly,RRLB,WF,1.0,334.86358550120207
+medium,RandomSchedule,Random,Random,WF,0.69,339.4045121366253
+medium,GASchedule,GA,GA,WF,0.645,321.7004194318459
+medium,LEAORRLB,LEAO,RRLB,WF,0.71,231.93224368352003
+medium,SECOnlyLocal+PGES,SECOnlyLocal,PGES,WF,1.0,266.7959207425601
+medium,RandomOffload+PGES,Random,PGES,WF,0.47,316.8327361691968
+medium,OptimalOffload+PGES,Optimal,PGES,WF,0.65,189.72885671555528

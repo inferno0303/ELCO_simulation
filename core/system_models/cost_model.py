@@ -2,7 +2,7 @@ from core.system_models.network_model import FunctionTask, IoTDevice, SECServer,
 from config import *
 
 
-def local_device_execution(func: FunctionTask, iot: IoTDevice):
+def iot_execution(func: FunctionTask, iot: IoTDevice):
     """
     策略1：本地设备执行
     :param func: 函数任务对象
@@ -22,12 +22,12 @@ def local_device_execution(func: FunctionTask, iot: IoTDevice):
     return latency, energy
 
 
-def local_sec_execution(func: FunctionTask, iot: IoTDevice, sec: SECServer, cr_ik: float) -> tuple:
+def loc_sec_execution(func: FunctionTask, iot: IoTDevice, loc_sec: SECServer, cr_ik: float) -> tuple:
     """
     策略2：本地SEC执行
     :param func: 函数任务对象
     :param iot: IoT设备对象
-    :param sec: SEC服务器对象
+    :param loc_sec: SEC服务器对象
     :param cr_ik: CPU分配(MHz)
     :return: (总延迟, 能耗)
     """
@@ -36,10 +36,10 @@ def local_sec_execution(func: FunctionTask, iot: IoTDevice, sec: SECServer, cr_i
 
     # 2. 计算冷启动延迟 (公式18-20)
     # 检查容器是否已缓存
-    if func.func_type.id in sec.cached_functions:
+    if func.func_type.id in loc_sec.cached_functions:
         T_pull = 0
     else:
-        T_pull = func.func_type.image_size / (sec.backhaul_bw / 8)
+        T_pull = func.func_type.image_size / (loc_sec.backhaul_bw / 8)
 
     # 容器初始化时间 (公式20)
     T_init = (SEC_CONT_INIT_EFFI * func.func_type.image_size) / cr_ik
@@ -56,19 +56,19 @@ def local_sec_execution(func: FunctionTask, iot: IoTDevice, sec: SECServer, cr_i
 
     if LOG_LEVEL == 'debug':
         print(
-            f'[Detail] 函数{func.id}在本地SEC计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{total_latency:.3f}s = T_d2s{T_d2s:.3f}s + T_pull{T_pull:.3f} + T_init{T_init:.3f} + T_exe{T_exe:.3f}，能耗{energy:.3f}J = TX_power*T_d2s/eff {iot.tx_power} * {T_d2s:.3f}，SEC能力{sec.comp_resource:.3f}MHz，分配了{cr_ik}MHz')
+            f'[Detail] 函数{func.id}在本地SEC计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{total_latency:.3f}s = T_d2s{T_d2s:.3f}s + T_pull{T_pull:.3f} + T_init{T_init:.3f} + T_exe{T_exe:.3f}，能耗{energy:.3f}J = TX_power*T_d2s/eff {iot.tx_power} * {T_d2s:.3f}，SEC能力{loc_sec.comp_resource:.3f}MHz，分配了{cr_ik}MHz')
 
     return total_latency, energy
 
 
-def collab_sec_execution(func: FunctionTask, iot: IoTDevice, local_sec: SECServer, target_sec: SECServer,
+def collab_sec_execution(func: FunctionTask, iot: IoTDevice, loc_sec: SECServer, target_sec: SECServer,
                          sec_network: SECNetwork, cr_ik: float) -> tuple:
     """
     策略3：协作SEC执行
     :param sec_network: SECNetwork
     :param func: 函数任务对象
     :param iot: IoT设备对象
-    :param local_sec: 本地SEC服务器
+    :param loc_sec: 本地SEC服务器
     :param target_sec: 目标SEC服务器
     :param cr_ik: CPU分配(MHz)
     :return: (总延迟, 能耗)
@@ -77,7 +77,7 @@ def collab_sec_execution(func: FunctionTask, iot: IoTDevice, local_sec: SECServe
     T_d2s = (func.invocations * func.data_size) / (iot.uplink_rate / 8)
 
     # 2. 计算服务器间传输延迟 T^s2s (公式24)
-    lat, bw = sec_network.get_connection(local_sec.id, target_sec.id)
+    lat, bw = sec_network.get_connection(loc_sec.id, target_sec.id)
     if lat and bw:
         T_s2s = (func.invocations * func.data_size) / (bw / 8) + lat
     else:
@@ -106,3 +106,9 @@ def collab_sec_execution(func: FunctionTask, iot: IoTDevice, local_sec: SECServe
             f'[Detail] 函数{func.id}在协作SEC计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{total_latency:.3f}s = T_d2s{T_d2s:.3f}s + T_s2s{T_s2s:3f} + T_pull{T_pull:.3f} + T_init{T_init:.3f} + T_exe{T_exe:.3f}，能耗{energy:.3f}J = TX_power*T_d2s/eff {iot.tx_power} * {T_d2s:.3f}，SEC能力{target_sec.comp_resource:.3f}MHz，分配了{cr_ik}MHz')
 
     return total_latency, energy
+
+
+def norm_to_cost(latency: float, energy: float) -> float:
+    # 计算归一化成本 (公式33)
+    cost = OMEGA * (latency / T_ref) + (1 - OMEGA) * (energy / E_ref)
+    return cost
