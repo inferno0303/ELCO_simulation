@@ -13,9 +13,7 @@ class SystemState:
         self.functions = {}
         self.sec_network = None
 
-    def __repr__(self):
-        # return f'EntityManager: \n {self.get_base_station_count()} base_station: {self.base_station}, \n {self.get_sec_server_count()} sec_server: {self.sec_server}, \n {self.get_iot_device_count()} iot_device: {self.iot_device}, \n {self.get_function_type_count()} function_type: {self.function_type}, \n {self.get_function_count()} function: {self.function}'
-        return f'EntityManager: \n {self.get_function_count()} bs: {self.base_stations}, \n {self.get_sec_server_count()} se: {self.sec_servers}'
+    # === setter方法 ===
 
     def add_base_station(self, bs: BaseStation, associated_sec_id: int | str):
         self.base_stations[bs.id] = {
@@ -48,6 +46,10 @@ class SystemState:
     def set_sec_network(self, sec_network: SECNetwork):
         self.sec_network = sec_network
 
+    # === getter方法 ===
+
+    # === 数量 ===
+
     def get_base_station_count(self) -> int:
         return len(self.base_stations.keys())
 
@@ -60,37 +62,49 @@ class SystemState:
     def get_function_type_count(self) -> int:
         return len(self.function_types.keys())
 
-    def get_sec_server_instance(self, sec_id: int | str) -> SECServer:
-        return self.sec_servers[sec_id]['instance']
-
-    def get_sec_list(self) -> List[SECServer]:
-        return [_val['instance'] for _val in self.sec_servers.values()]
-
-    # 计算SEC总内存 (单位: MB)
-    def get_sec_total_mem(self) -> float:
-        S_total = 0.0
-        for sec_id, _val in self.sec_servers.items():
-            sec: SECServer = self.get_sec_server_instance(sec_id)
-            S_total += min(sec.memory, sec.comp_resource / RATIO)
-        return S_total
-
-    # 计算SEC总内存 (单位: MHz)
-    def get_sec_total_comp_res(self) -> float:
-        return self.get_sec_total_mem() * RATIO
-
-    def get_function_type_list(self) -> List[FunctionType]:
-        return [_val['instance'] for _val in self.function_types.values()]
-
     def get_function_count(self) -> int:
         return len(self.functions.keys())
+
+    # === 实例 ===
+
+    def get_sec_server_instance(self, sec_id: int | str) -> SECServer:
+        return self.sec_servers[sec_id]['instance']
 
     def get_function_instance(self, func_id: int | str) -> FunctionTask:
         return self.functions[func_id]['instance']
 
+    # === 实例列表 ===
+
+    def get_sec_list(self) -> List[SECServer]:
+        return [_val['instance'] for _val in self.sec_servers.values()]
+
+    def get_function_type_list(self) -> List[FunctionType]:
+        return [_val['instance'] for _val in self.function_types.values()]
+
     def get_function_list(self) -> List[FunctionTask]:
         return [_val['instance'] for _val in self.functions.values()]
 
-    '''Mapping Rule: F->U->BS->S'''
+    # === 复杂属性计算 ===
+
+    # 获取某个sec的总可用内存（S_k = min(M_K, CR_k / RATIO)，单位：MB）
+    @staticmethod
+    def get_sec_available_mem(sec: SECServer) -> float:
+        return min(sec.memory, sec.comp_resource / RATIO)
+
+    # 获取某个sec的总可用计算资源（CR_K = min(M_k * RATIO, CR_k)，单位：MHz）
+    @staticmethod
+    def get_sec_available_cr(sec: SECServer) -> float:
+        return min(sec.memory * RATIO, sec.comp_resource)
+
+    # 计算系统总内存 (单位: MB)
+    def get_system_available_mem(self) -> float:
+        return sum(self.get_sec_available_mem(sec) for sec in self.get_sec_list())
+
+    # 计算SEC侧总计算资源 (单位: MHz)
+    def get_system_available_cr(self) -> float:
+        return sum(self.get_sec_available_cr(sec) for sec in self.get_sec_list())
+
+    # === 映射函数，规则: F->U->BS->S ===
 
     # F->U mapping
     def f2u_mapping(self, func_id: int | str) -> IoTDevice:

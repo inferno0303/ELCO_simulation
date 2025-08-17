@@ -22,30 +22,7 @@ The script does not require any third-party dependencies and uses Python's built
 import csv
 import random
 from pathlib import Path
-
-DATASET_SIZES = {
-    "small": {
-        "seed": 42,
-        "bs_and_sec": 5,
-        "iot_device": 20,
-        "function_type": 5,
-        "function_task": 50
-    },
-    "medium": {
-        "seed": 43,
-        "bs_and_sec": 10,
-        "iot_device": 50,
-        "function_type": 8,
-        "function_task": 200
-    },
-    "large": {
-        "seed": 44,
-        "bs_and_sec": 15,
-        "iot_device": 100,
-        "function_type": 10,
-        "function_task": 1000
-    }
-}
+from config import *
 
 
 def write_csv(path, header, rows):
@@ -72,9 +49,9 @@ def generate_for_scale(scale_name, cfg):
         associated_sec_id = sec_id
         base_stations.append([bs_id, associated_sec_id])
 
-        comp_resource = random.randint(2500 * 4, 4000 * 16)  # CPU capacity in MHz * cores
-        memory = random.randint(16 * 1024, 64 * 1024)  # Memory in MB
-        backhaul_bw = random.randint(100, 200)  # Backhaul bandwidth in Mbps
+        comp_resource = random.choice(SEC.get('SEC_CPU'))  # CPU capacity in MHz * cores
+        memory = random.choice(SEC.get('SEC_MEM'))  # Memory in MB
+        backhaul_bw = random.choice(SEC.get('SEC_BH_BW'))  # Backhaul bandwidth in Mbps
         sec_servers.append([sec_id, comp_resource, memory, backhaul_bw])
     write_csv(out_dir / "base_station.csv", ["id", "associated_sec_id"], base_stations)
     write_csv(out_dir / "sec_server.csv", ["id", "comp_resource", "memory", "backhaul_bw"], sec_servers)
@@ -84,8 +61,8 @@ def generate_for_scale(scale_name, cfg):
     _headers = ["id", "comp_resource", "tx_power", "bandwidth", "channel_gain", "noise_power", "associated_bs_id"]
     for i in range(cfg["iot_device"]):
         iot_id = i
-        comp_resource = random.randint(400, 800)  # CPU capacity in MHz
-        tx_power = round(random.choice([0.05, 0.1, 0.2]), 6)  # Transmission power in W
+        comp_resource = random.randint(500, 1000)  # CPU capacity in MHz
+        tx_power = random.choice([0.1, 0.2])  # Transmission power in W
         bandwidth = int(random.choice([1_000_000, 2_000_000, 5_000_000]))  # Channel bandwidth in Hz
         channel_gain = random.uniform(1e-6, 5e-5)
         noise_power = random.uniform(1e-8, 1e-6)
@@ -116,9 +93,9 @@ def generate_for_scale(scale_name, cfg):
     _headers = ["id", "data_size", "workload", "invocations", "func_type_id", "associated_iot_id"]
     for i in range(cfg["function_task"]):
         task_id = i
-        data_size = round(random.uniform(0.01, 0.5), 6)  # Input data size in MB
-        workload = random.randint(200, 800)  # Computation workload in MHz
-        invocations = random.randint(5, 15)  # Invocation count
+        data_size = random.choice(FUNC.get('DATA_SIZE'))  # Input data size in MB
+        workload = random.choice(FUNC.get('WORKLOAD'))  # Computation workload in MHz
+        invocations = random.choice(FUNC.get('INVOCATION'))  # Invocation count
 
         # Assign to a random FunctionType
         func_type = random.choice(function_types)[0]

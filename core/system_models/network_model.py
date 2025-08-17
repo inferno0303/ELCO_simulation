@@ -90,7 +90,7 @@ class SECNetwork:
         key = tuple(sorted((server_id1, server_id2)))
         self.edges[key] = (latency, bandwidth)
 
-    def get_connection(self, sec_id_1: int | str, sec_id_2: int | str) -> tuple:
+    def get_latency_and_bandwidth(self, sec_id_1: int | str, sec_id_2: int | str) -> tuple:
         """
         返回server1与server2之间的延迟和带宽。
         - 如果有直接边，直接返回（latency, bandwidth）
@@ -159,5 +159,5 @@ class SECNetwork:
 
     def is_connected(self, server_id1: int, server_id2: int) -> bool:
         # 利用get_connection判断是否可达
-        latency, bw = self.get_connection(server_id1, server_id2)
+        latency, bw = self.get_latency_and_bandwidth(server_id1, server_id2)
         return latency is not None

@@ -2,10 +2,11 @@ from core.strategic_profile import StrategicProfile
 from core.system_state import SystemState
 
 
+# 所有任务本地IoT执行
 class IoTOnly:
     def __init__(self, ss: SystemState):
         self.ss = ss
-        self.sp = StrategicProfile(ss)
+        self.sp = StrategicProfile(ss)  # 初始化一个策略
 
         # 函数列表
         self.func_lst = ss.get_function_list()

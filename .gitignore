@@ -4,6 +4,10 @@
 # idea
 .idea
 
+# log
+logs
+*.log
+
 # build & dist
 build
 dist

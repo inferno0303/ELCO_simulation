@@ -15,10 +15,6 @@ def iot_execution(func: FunctionTask, iot: IoTDevice):
     # 计算能耗 (公式16)
     energy = IOT_EXE_EFFICIENT * func.invocations * func.workload * (iot.comp_resource ** 2)
 
-    if LOG_LEVEL == 'debug':
-        print(
-            f'[Detail] 函数{func.id}在本地IoT计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{latency:.3f}s，能耗{energy:.3f}J，iot能力{iot.comp_resource:.3f}MHz')
-
     return latency, energy
 
 
@@ -54,10 +50,6 @@ def loc_sec_execution(func: FunctionTask, iot: IoTDevice, loc_sec: SECServer, cr
     # 能耗 (公式23)
     energy = iot.tx_power * T_d2s / IOT_TX_EFFICIENT
 
-    if LOG_LEVEL == 'debug':
-        print(
-            f'[Detail] 函数{func.id}在本地SEC计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{total_latency:.3f}s = T_d2s{T_d2s:.3f}s + T_pull{T_pull:.3f} + T_init{T_init:.3f} + T_exe{T_exe:.3f}，能耗{energy:.3f}J = TX_power*T_d2s/eff {iot.tx_power} * {T_d2s:.3f}，SEC能力{loc_sec.comp_resource:.3f}MHz，分配了{cr_ik}MHz')
-
     return total_latency, energy
 
 
@@ -77,7 +69,7 @@ def collab_sec_execution(func: FunctionTask, iot: IoTDevice, loc_sec: SECServer,
     T_d2s = (func.invocations * func.data_size) / (iot.uplink_rate / 8)
 
     # 2. 计算服务器间传输延迟 T^s2s (公式24)
-    lat, bw = sec_network.get_connection(loc_sec.id, target_sec.id)
+    lat, bw = sec_network.get_latency_and_bandwidth(loc_sec.id, target_sec.id)
     if lat and bw:
         T_s2s = (func.invocations * func.data_size) / (bw / 8) + lat
     else:
@@ -100,10 +92,6 @@ def collab_sec_execution(func: FunctionTask, iot: IoTDevice, loc_sec: SECServer,
 
     # 能耗 (与策略2相同)
     energy = iot.tx_power * T_d2s / IOT_TX_EFFICIENT
-
-    if LOG_LEVEL == 'debug':
-        print(
-            f'[Detail] 函数{func.id}在协作SEC计算：di {func.data_size:.3f}MB ci {func.workload:.3f}MHz ni {func.invocations}次，延迟{total_latency:.3f}s = T_d2s{T_d2s:.3f}s + T_s2s{T_s2s:3f} + T_pull{T_pull:.3f} + T_init{T_init:.3f} + T_exe{T_exe:.3f}，能耗{energy:.3f}J = TX_power*T_d2s/eff {iot.tx_power} * {T_d2s:.3f}，SEC能力{target_sec.comp_resource:.3f}MHz，分配了{cr_ik}MHz')
 
     return total_latency, energy
 
