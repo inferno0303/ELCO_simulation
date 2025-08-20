@@ -14,6 +14,11 @@ class PGES:
         self.func_lst = ss.get_function_list()
         self.func_lst = sorted(self.func_lst, key=lambda f: (f.invocations * f.workload), reverse=True)
 
+        # 博弈收敛过程：cost变化、energy（参考值）变化、latency（参考值）变化
+        self.cost_changes = []
+        self.latency_cost_changes = []
+        self.energy_cost_change = []
+
     def __repr__(self):
         return f'Algorithm PGES with {self.alloc_method} resource alloc method'
 
@@ -112,6 +117,12 @@ class PGES:
                     # 更新决策剖面
                     self.sp.schedule_to_target_sec(func_id=func.id, target_sec_id=best_sec.id)
                     migrated = True
+
+                    # 保存博弈过程中的cost变化、energy（参考值）变化、latency（参考值）变化
+                    self.cost_changes.append(self.get_cost())
+                    latency, energy = self.get_ref_latency_energy()
+                    self.latency_cost_changes.append(latency)
+                    self.energy_cost_change.append(energy)
                     # print(f'* 博弈动作：函数{func.id} SEC{curr_sec.id}->SEC{best_sec.id}')
 
             # 取得纳什均衡，结束博弈
@@ -122,3 +133,6 @@ class PGES:
 
     def get_cost(self):
         return self.sp.get_cost(alloc_method=self.alloc_method)
+
+    def get_ref_latency_energy(self):
+        return self.sp.get_ref_latency_energy(alloc_method=self.alloc_method)

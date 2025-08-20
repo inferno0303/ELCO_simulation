@@ -3,7 +3,6 @@ from typing import List
 
 from core.system_models.cost_model import *
 from core.system_state import SystemState
-from utils.logging import logging
 
 
 class StrategicProfile:
@@ -176,13 +175,13 @@ class StrategicProfile:
             # 策略1
             if strategy == 1:
                 latency, energy = iot_execution(func=func, iot=iot)
-                logging.debug(f'*决策: 函数{func.id}在本地IoT运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
+                # print(f'*决策: 函数{func.id}在本地IoT运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
 
             # 策略2
             elif strategy == 2:
                 cr_ik = self.get_cr_ik(func=func, sec=loc_sec, alloc_method=alloc_method)
                 latency, energy = loc_sec_execution(func=func, iot=iot, loc_sec=loc_sec, cr_ik=cr_ik)
-                logging.debug(f'*决策: 函数{func.id}在本地SEC运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
+                # print(f'*决策: 函数{func.id}在本地SEC运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
 
             # 策略3
             else:
@@ -191,7 +190,7 @@ class StrategicProfile:
                 cr_ik = self.get_cr_ik(func=func, sec=target_sec, alloc_method=alloc_method)
                 latency, energy = collab_sec_execution(func=func, iot=iot, loc_sec=loc_sec, target_sec=target_sec,
                                                        sec_network=self.ss.sec_network, cr_ik=cr_ik)
-                logging.debug(f'*决策: 函数{func.id}在协作SEC运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
+                # print(f'*决策: 函数{func.id}在协作SEC运行，延迟 {latency:.2f}s，能耗 {energy:.2f}J')
 
             # 计算归一化cost并累加
             cost += norm_to_cost(latency=latency, energy=energy)
@@ -230,3 +229,7 @@ class StrategicProfile:
             total_energy += energy
 
         return total_latency, total_energy
+
+    def get_ref_latency_energy(self, alloc_method: str = 'WF'):
+        latency, energy = self.get_real_latency_energy(alloc_method=alloc_method)
+        return latency / T_ref * OMEGA, energy / E_ref * OMEGA

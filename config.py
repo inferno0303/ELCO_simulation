@@ -1,9 +1,3 @@
-# 控制是否将日志输出到文件
-ENABLE_FILE_LOGGING = False
-
-# 控制是否将日志打印到标准输出
-ENABLE_CONSOLE_LOGGING = False
-
 # 数据集相关的参数
 DATASET_SIZES = {
     "tiny": {
@@ -56,15 +50,22 @@ SEC = {
     'SEC_BH_BW': [100, 120, 140, 160, 180, 200]
 }
 
+# SEC 异构实验
+# SEC = {
+#     'SEC_CPU': [2500 * 1, 3200 * 32],
+#     'SEC_MEM': [2 * 1024, 128 * 1024],
+#     'SEC_BH_BW': [100, 120, 140, 160, 180, 200]
+# }
+
 FUNC = {
     'DATA_SIZE': [0.2, 0.4, 0.6, 0.8, 1.0],
     'WORKLOAD': [20, 200, 1500, 3000],
     'INVOCATION': [2, 5, 10, 15]
 }
 
-IOT_EXE_EFFICIENT = 1e-8  # IoT设备计算能耗系数
+IOT_EXE_EFFICIENT = 1e-8  # IoT设备计算能耗系数 \eta
 IOT_TX_EFFICIENT = 0.25  # IoT 发射时的能量效率
-SEC_CONT_INIT_EFFI = 2.5  # SEC初始化容器效率 \eta，单位：MHz/MB
+SEC_CONT_INIT_EFFI = 2.5  # SEC初始化容器效率 \xi，单位：MHz/MB
 RATIO = 1.5  # cr与m的比例，计算资源MHz=内存MB*r
 T_ref = 5  # 延迟归一化参考值(s)
 E_ref = 5  # 能耗归一化参考值(J=W*s)
