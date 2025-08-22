@@ -4,7 +4,8 @@ from config import DATASET_SIZES
 from core.system_state import SystemState
 from utils.dataset_loader import load_dataset
 from utils.results_recorder import write_csv, new_csv_file
-from experimental_procedure import header, experimental_01, experimental_02, experimental_03, experimental_04
+from experimental_procedure import header, experimental_01, experimental_02, experimental_03, experimental_04, \
+    experimental_05
 
 
 def main():
@@ -18,7 +19,7 @@ def main():
         ss: SystemState = load_dataset(scale=scale, datasets_root='datasets')
 
         # 运行实验
-        results = experimental_04(ss)
+        results = experimental_05(ss)
         write_csv(file_name, results)
 
         print(f'============ 完成数据集 {scale} ============')

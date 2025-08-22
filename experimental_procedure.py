@@ -273,7 +273,7 @@ def experimental_03(ss: SystemState) -> List[List]:
         cost, latency, energy, ratio, duration_time
     ])
 
-    # 写入csv文件
+    # （与之前不同）博弈过程，写入额外的csv文件
     from utils.results_recorder import new_csv_file, write_csv
     now_time = time.strftime('%Y%m%d_%H%M%S')
     file_name = f'PGES_game_process_{ss.get_function_count()}_{now_time}.csv'
@@ -355,5 +355,73 @@ def experimental_04(ss: SystemState) -> List[List]:
         f'{full_name}', f'{algo_name}', f'', f'',
         cost, latency, energy, ratio, duration_time
     ])
+
+    return results
+
+
+# 实验5：证明 LEAO+PGES+WF 的有效性，对比组：IOTOnly（基线）、RAND-O+RR+ES、LSO+LLF+ES、M-LEAO+MET+WF、M-LEAO+PGES+WF、CGO+CGS+WF
+def experimental_05(ss: SystemState) -> List[List]:
+    bs_count = ss.get_base_station_count()
+    sec_count = ss.get_sec_server_count()
+    iot_count = ss.get_iot_device_count()
+    func_type_count = ss.get_function_type_count()
+    func_count = ss.get_function_count()
+
+    results = []
+
+    '''
+    数据组01：IoTOnly：本地IoT执行作为基线
+    '''
+    # 运行算法
+    start_time = time.time()
+    algo = IoTOnly(ss)
+    algo.run()
+    end_time = time.time()
+
+    # 收集数据
+    algo_name = algo.__class__.__name__
+    full_name = f'{algo_name}'
+    cost = algo.get_cost()
+    ratio = algo.sp.get_offload_ratio()
+    latency, energy = algo.sp.get_real_latency_energy()
+    duration_time = end_time - start_time
+
+    # 记录结果
+    print(f'*结果：{full_name}, cost {cost:.2f}, offloading ratio {ratio * 100:.2f}%, time {duration_time:.2f}s')
+    results.append([
+        bs_count, sec_count, iot_count, func_type_count, func_count, OMEGA, RATIO, T_ref, E_ref,
+        f'{full_name}', f'{algo_name}', f'', f'',
+        cost, latency, energy, ratio, duration_time
+    ])
+
+    alloc_method = 'WF'
+    for ALGO_1 in [LocalSECOnly, RandomOffloading, MyopicLEAO, CostGreedyOffloading, LEAO]:
+        print()
+        start_time = time.time()
+        algo_1 = ALGO_1(ss, alloc_method)
+        sp = algo_1.run()
+        for ALGO_2 in [NoScheduling, RandomScheduling, RoundRobinScheduling, LeastLoadedFirstScheduling,
+                       MinExecutionTimeScheduling, CostGreedyScheduling, PGES]:
+
+            algo_2 = ALGO_2(ss, sp, alloc_method)
+            algo_2.run()
+            end_time = time.time()
+
+            # 收集数据
+            algo_1_name = algo_1.__class__.__name__
+            algo_2_name = algo_2.__class__.__name__
+            full_name = f'{algo_1_name} + {algo_2_name} + {alloc_method}'
+            cost = algo_2.get_cost()
+            ratio = algo_2.sp.get_offload_ratio()
+            latency, energy = algo_2.sp.get_real_latency_energy()
+            duration_time = end_time - start_time
+
+            # 记录结果
+            print(f'*结果：{full_name}, cost {cost:.2f}, offloading ratio {ratio:.2f}, time {duration_time:.2f}s')
+            results.append([
+                bs_count, sec_count, iot_count, func_type_count, func_count, OMEGA, RATIO, T_ref, E_ref,
+                f'{full_name}', f'{algo_1_name}', f'{algo_2_name}', f'{alloc_method}',
+                cost, latency, energy, ratio, duration_time
+            ])
 
     return results
